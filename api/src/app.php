@@ -32,19 +32,18 @@ class App
          $jsonResponse = $response->withJson($people);
          return $jsonResponse;
      });
-     $app->get('/jedi/name', function (Request $request, Response $response, array $args) {
-         $name = $args['name'];
-         $this->logger->addInfo("GET /jedi/".$name);
-         $jedi = $this->db->query('SELECT * from jedi where name='.$name)->fetch();
+     $app->get('/jedi/{id}', function (Request $request, Response $response, array $args) {
+         $id = $args['id'];
+
+         $jedi = $this->db->query('SELECT * from jedi where id='.$id)->fetch();
 
          if($jedi){
-           $response =  $response->withJson($people);
+           $response = $response->withJson($jedi);
          } else {
-           $errorData = array('status' => 404, 'message' => 'not found');
+           $errorData = array('status' => 404, 'Jedi' => 'not found. Continue Order 66');
            $response = $response->withJson($errorData, 404);
          }
          return $response;
-
      });
      $app->put('/jedi/{id}', function (Request $request, Response $response, array $args) {
          $id = $args['id'];
