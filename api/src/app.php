@@ -1,3 +1,5 @@
+// I ran into a lot of issues that I managed to to somewhat figured out. My biggest issue was with my database at the beginning of the project. I set up my first database into the scotchbox directory and no matter what I did I could not get the data to populate outside of actually going into. After trial and error I decided to hardcode the data into labdb.sql and that still did not get the data into the api. I decided to create a whole new database called jedidb and that fixed my issue. I was getting a 500 error after that was the result of a syntax error in composer.json that got fixed after running `dump-autoload`. The 500 error resolved into a smaller issue route issue that I was able to figure out thanks to error logging. I'm at the point now in the project where I can clean up and actually figure out the real issues in my code and my next step would have been to create a apitest.php file.
+
 <?php
 namespace green\jedi;
 use \Psr\Http\Message\ServerRequestInterface as Request;
