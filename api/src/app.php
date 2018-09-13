@@ -1,5 +1,3 @@
-// I ran into a lot of issues that I managed to to somewhat figured out. My biggest issue was with my database at the beginning of the project. I set up my first database into the scotchbox directory and no matter what I did I could not get the data to populate outside of actually going into. After trial and error I decided to hardcode the data into labdb.sql and that still did not get the data into the api. I decided to create a whole new database called jedidb and that fixed my issue. I was getting a 500 error after that was the result of a syntax error in composer.json that got fixed after running `dump-autoload`. The 500 error resolved into a smaller issue route issue that I was able to figure out thanks to error logging. I'm at the point now in the project where I can clean up and actually figure out the real issues in my code and my next step would have been to create a apitest.php file.
-
 <?php
 namespace green\jedi;
 use \Psr\Http\Message\ServerRequestInterface as Request;
@@ -28,15 +26,17 @@ class App
          $logger->pushHandler($file_handler);
          return $logger;
      };
+     //gets all jedi in database
      $app->get('/jedi', function (Request $request, Response $response) {
          $this->logger->addInfo("GET /jedi");
          $people = $this->db->query('SELECT * from jedi')->fetchAll();
          $jsonResponse = $response->withJson($people);
          return $jsonResponse;
      });
+     //gets jedi by ID
      $app->get('/jedi/{id}', function (Request $request, Response $response, array $args) {
          $id = $args['id'];
-
+         //Database query
          $jedi = $this->db->query('SELECT * from jedi where id='.$id)->fetch();
 
          if($jedi){
@@ -47,11 +47,48 @@ class App
          }
          return $response;
      });
+     //create new jedi
+     $app->post('/jedi', function (Request $request, Response $response) {
+         $this->logger->addInfo("POST /jedi/");
+
+         // build query string
+         $createString = "INSERT INTO jedi ";
+         $fields = $request->getParsedBody();
+         $keysArray = array_keys($fields);
+         $last_key = end($keysArray);
+         $values = '(';
+         $fieldNames = '(';
+         foreach($fields as $field => $value) {
+           $values = $values . "'"."$value"."'";
+           $fieldNames = $fieldNames . "$field";
+           if ($field != $last_key) {
+             // conditionally add a comma to avoid sql syntax problems
+             $values = $values . ", ";
+             $fieldNames = $fieldNames . ", ";
+           }
+         }
+         $values = $values . ')';
+         $fieldNames = $fieldNames . ') VALUES ';
+         $createString = $createString . $fieldNames . $values . ";";
+         // execute query
+         try {
+           $this->db->exec($createString);
+         } catch (\PDOException $e) {
+           var_dump($e);
+           $errorData = array('status' => 400, 'message' => 'Invalid data provided to create jedi');
+           return $response->withJson($errorData, 400);
+         }
+         // return updated record
+         $person = $this->db->query('SELECT * from jedi ORDER BY id desc LIMIT 1')->fetch();
+         $jsonResponse = $response->withJson($jedi);
+
+         return $jsonResponse;
+     });
      $app->put('/jedi/{id}', function (Request $request, Response $response, array $args) {
          $id = $args['id'];
          $this->logger->addInfo("PUT /jedi/".$name);
 
-         // check that person exists
+         // check that jedi exists
          $jedi = $this->db->query('SELECT * from jedi where id='.$id)->fetch();
          if(!$jedi){
            $errorData = array('status' => 404, 'message' => 'not found');
@@ -84,6 +121,7 @@ class App
 
          return $jsonResponse;
      });
+     //function to delete jedi by ID
      $app->delete('/jedi/{id}', function (Request $request, Response $response, array $args) {
        $id = $args['id'];
        $this->logger->addInfo("DELETE /jedi/".$id);
@@ -91,6 +129,7 @@ class App
        if($deleteSuccessful){
          $response = $response->withStatus(200);
        } else {
+         //displays error code if not found
          $errorData = array('status' => 404, 'message' => 'not found');
          $response = $response->withJson($errorData, 404);
        }
